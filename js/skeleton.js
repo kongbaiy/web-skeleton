@@ -112,11 +112,11 @@
 		function bindHistoryEvent(type) {
 			var historyEvent = window.history[type];
 			return function () {
-				var newEvent = historyEvent.apply(this, arguments); //执行history函数
-				var e = new Event(type);  //声明自定义事件
+				var newEvent = historyEvent.apply(this, arguments);
+				var e = new Event(type);
 				e.arguments = arguments;
-				window.dispatchEvent(e);  //抛出事件
-				return newEvent;  //返回方法，用于重写history的方法
+				window.dispatchEvent(e);
+				return newEvent;
 			}
 		}
 		window.history.pushState = bindHistoryEvent('pushState');
@@ -416,8 +416,8 @@
 		canvas.width = parent.offsetWidth;
 		canvas.height = parent.offsetHeight;
 
-		const base64 = 'data:image/svg+xml,' + encodeURIComponent(base64Content);
-		const img = document.createElement('img');
+		var base64 = 'data:image/svg+xml,' + encodeURIComponent(base64Content);
+		var img = document.createElement('img');
 
 		img.setAttribute('src', base64);
 		img.addEventListener('load', (e) => {
@@ -440,11 +440,11 @@
 			if (!url) return;
 			var oA = document.createElement('a');
 
-			oA.download = `${options.filename}.${options.format}`; // 设置下载的文件名，默认是'下载'
+			oA.download = `${options.filename}.${options.format}`;
 			oA.href = url;
 			document.body.appendChild(oA);
 			oA.click();
-			oA.remove(); // 下载之后把创建的元素删除
+			oA.remove();
 		});
 	}
 	window.Skeleton = Skeleton;
