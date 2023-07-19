@@ -184,22 +184,16 @@
 		var root =  typeof curc.root === 'function' ? curc.root() : curc.root;
 
 		if (root instanceof Element) {
-			var allElement = root.getElementsByTagName('*').length;
-			var allScript = root.getElementsByTagName('script').length;
-			var allNoScript = root.getElementsByTagName('noscript').length;
-			var mode = curc.mode;
-			var count = allElement - (allScript + allNoScript);
-
 			this.currentRoot = root;
 			this.className = 's_' + randomId();
 			this.keyframesName = 's_' + randomId();
-			this.create(root, count, mode);
+			this.create(root, curc.mode);
 		} else {
 			throw new Error(`${JSON.stringify(curc)} is not Element`);
 		}
 	}
 
-	Skeleton.prototype.create = function (root, count, mode) {
+	Skeleton.prototype.create = function (root, mode) {
 		for (let i = 0; i < root?.children?.length; i++) {
 			var node = root.children[i];
 
@@ -214,33 +208,38 @@
 					getStyle(node, 'width').length &&
 					getStyle(node, 'height').length
 				) {
-					this.setMode(mode, this.currentRoot, node);
+					this.setMode({
+						type: mode,
+						parent: this.currentRoot,
+						sub: node,
+					});
 				}
                 
-				node.children.length > 0 && this.create(node, count, mode);
+				node.children.length > 0 && this.create(node, mode);
 			}
 		}
 	}
 
-	Skeleton.prototype.setMode = function (type, parent, sub) {
+	Skeleton.prototype.setMode = function (options = {}) {
 		var _this = this;
-		switch (type) {
+		switch (options.type) {
 			case 'react':
-				_this.setReactStyle(parent, sub, function (htmlString) {
-					_this.downloadReactVueComponent('react', htmlString);
+				_this.setReactStyle(options.parent, options.sub, function (htmlString) {
+					_this.downloadReactVueComponent('react', htmlString, options.filename);
 				});
 				break;
 			case 'vue':
-				_this.setVueStyle(parent, sub, function (htmlString) {
-					_this.downloadReactVueComponent('vue', htmlString);
+				_this.setVueStyle(options.parent, options.sub, function (htmlString) {
+					_this.downloadReactVueComponent('vue', htmlString, options.filename);
 				});
 				break;
 
 			case 'img':
-				_this.setImgStyle(parent, sub, function (htmlString) {
+				_this.setImgStyle(options.parent, options.sub, function (htmlString) {
 					_this.downloadImg({
-						parent,
-						base64Content: htmlString
+						parent: options.parent,
+						base64Content: htmlString,
+						filename: options.filename
 					});
 				});
 				break;
@@ -447,5 +446,6 @@
 			oA.remove();
 		});
 	}
+
 	window.Skeleton = Skeleton;
 })();
