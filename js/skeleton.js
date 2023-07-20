@@ -197,7 +197,7 @@
 				
 				this.create(root, item.mode, item.filename);
 			} else {
-				throw new Error(`${JSON.stringify(root)} is not Element`);
+				throw new Error(`root is not Element, root = ${JSON.stringify(root)} `);
 			}
 		}.bind(this));
 	}
