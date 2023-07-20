@@ -55,14 +55,14 @@
     <script src="./js/skeleton.js"></script>
     <script>
 		var s = new Skeleton([
-			// { 
-			// 	root: document.querySelector('.box'), 
-			// 	path: location.pathname, 
-			// 	mode: 'react', 
-			// 	filename: 'boxComponent' 
-			// },
 			{ 
-				root: null, 
+				root: document.querySelector('.box'), 
+				path: location.pathname, 
+				mode: 'react', 
+				filename: 'boxComponent' 
+			},
+			{ 
+				root: document.querySelector('.box2'), 
 				path: location.pathname, 
 				mode: 'vue', 
 				filename: 'box2Component' 
