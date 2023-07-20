@@ -10,7 +10,8 @@
 			padding: 0;
 		}
 		
-		.box {
+		.box,
+		.box2 {
 			overflow: hidden;
 			margin-top: 200px;
 			border: 1px solid;
@@ -45,10 +46,27 @@
 			<p class="box-child-p"></p>
 		</div>
 	</div>
+	<div class="box2">
+		<div class="box-child">
+			<p class="box-child-p"></p>
+		</div>
+	</div>
+	
     <script src="./js/skeleton.js"></script>
     <script>
-        var s = new Skeleton([
-			{ root: document.querySelector('.box'), path: location.pathname, mode: 'vue', downloadFileName: 'SkeletonNav' }
+		var s = new Skeleton([
+			{ 
+				root: document.querySelector('.box'), 
+				path: location.pathname, 
+				mode: 'react', 
+				filename: 'boxComponent' 
+			},
+			{ 
+				root: document.querySelector('.box2'), 
+				path: location.pathname, 
+				mode: 'vue', 
+				filename: 'box2Component' 
+			}
 		]);
     </script>
 </body>

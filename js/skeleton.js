@@ -162,6 +162,8 @@
 		}
 
 		this.currentRoot = null;
+		this.currentRootChildCount = 0;
+		this.currentRootChildNum = 0;
 		this.className = null;
 		this.keyframesName = null;
 		this.elementLocation = new getElementLocation();
@@ -176,24 +178,31 @@
 		var currentConfig = config.map(function (item) {
 			if (item.path === window.location.pathname) return item;
 		});
-		return currentConfig[0] || {}
+		return currentConfig
 	}
 
 	Skeleton.prototype.init = function (config) {
-		var curc = this.getCurrentConfig(config);
-		var root =  typeof curc.root === 'function' ? curc.root() : curc.root;
-
-		if (root instanceof Element) {
-			this.currentRoot = root;
-			this.className = 's_' + randomId();
-			this.keyframesName = 's_' + randomId();
-			this.create(root, curc.mode);
-		} else {
-			throw new Error(`${JSON.stringify(curc)} is not Element`);
-		}
+		this.getCurrentConfig(config).forEach(function(item) {
+			var root =  typeof item.root === 'function' ? item.root() : item.root;
+			
+			if (root instanceof Element) {
+				var allElement = root.getElementsByTagName('*').length;
+				var allScript = root.getElementsByTagName('script').length;
+				var allNoScript = root.getElementsByTagName('noscript').length;
+	
+				this.currentRoot = root;
+				this.currentRootChildCount = allElement - (allScript + allNoScript);
+				this.className = 's_' + randomId();
+				this.keyframesName = 's_' + randomId();
+				
+				this.create(root, item.mode, item.filename);
+			} else {
+				throw new Error(`${JSON.stringify(root)} is not Element`);
+			}
+		}.bind(this));
 	}
 
-	Skeleton.prototype.create = function (root, mode) {
+	Skeleton.prototype.create = function (root, mode, filename) {
 		for (let i = 0; i < root?.children?.length; i++) {
 			var node = root.children[i];
 
@@ -201,6 +210,7 @@
 				var viewport = isInViewport(node);
 				var visible = isVisible(node);
 
+				this.currentRootChildNum += 1;
 				if (
 					viewport &&
 					visible &&
@@ -212,10 +222,11 @@
 						type: mode,
 						parent: this.currentRoot,
 						sub: node,
+						filename
 					});
 				}
                 
-				node.children.length > 0 && this.create(node, mode);
+				node.children.length > 0 && this.create(node, mode, filename);
 			}
 		}
 	}
@@ -247,13 +258,12 @@
 	}
 
 	Skeleton.prototype.setReactStyle = function (parent, sub, completedCallback) {
-		var _this = this;
 		var {
 			topOffset,
 			leftOffset,
 			offsetElementWidth,
 			offsetElementHeight
-		} = _this.elementLocation.relative(parent, sub);
+		} = this.elementLocation.relative(parent, sub);
 		var style = `
 			position: 'absolute',
 			top: '${topOffset}%',
@@ -268,29 +278,31 @@
 		if (parseFloat(borderRadius.replace(/\D/g, '')) > 0)
 			style += `borderRadius: '${borderRadius}'`;
 
-		if (!_this.reactHtmlString) _this.reactHtmlString = '';
-		_this.reactHtmlString += `<div className='${_this.className}' style={{${style}}}></div>`;
+		if (!this.reactHtmlString) this.reactHtmlString = '';
+		this.reactHtmlString += `<div className='${this.className}' style={{${style}}}></div>`;
 
-		if (typeof completedCallback === 'function' && !_this.setReactStyleTimeout) {
-			clearTimeout(_this.setReactStyleTimeout);
-			_this.setReactStyleTimeout = setTimeout(function () {
-				var width = parent.offsetWidth / SCREEN_WIDTH * 100;
-				var height = parent.offsetHeight / SCREEN_HEIGHT * 100;
-				var containerStyle = `
-					overflow: 'hidden',
-					position: 'relative',
-					width: '${width}vw',
-					height: '${height}vh'
-				`;
-				var content = `<div style={{${containerStyle}}}>${_this.reactHtmlString}</div>`;
-				var reactComponentString = reactComponentTemplate
-					.replaceAll('<@className>', _this.className)
-					.replaceAll('<@keyframesName>', _this.keyframesName)
-					.replaceAll('<@content>', content);
+		if (
+			typeof completedCallback === 'function' &&
+			this.currentRootChildNum === this.currentRootChildCount
+		) {
+			var width = parent.offsetWidth / SCREEN_WIDTH * 100;
+			var height = parent.offsetHeight / SCREEN_HEIGHT * 100;
+			var containerStyle = `
+				overflow: 'hidden',
+				position: 'relative',
+				width: '${width}vw',
+				height: '${height}vh'
+			`;
+			var content = `<div style={{${containerStyle}}}>${this.reactHtmlString}</div>`;
+			var reactComponentString = reactComponentTemplate
+				.replaceAll('<@className>', this.className)
+				.replaceAll('<@keyframesName>', this.keyframesName)
+				.replaceAll('<@content>', content);
 
-				completedCallback(reactComponentString);
-				delete _this.reactHtmlString;
-			});
+			completedCallback(reactComponentString);
+			delete this.reactHtmlString;
+			this.currentRootChildNum = 0;
+			this.currentRootChildCount = 0;
 		}
 	}
 
@@ -302,9 +314,9 @@
 			'react': 'jsx',
 			'vue': 'vue'
 		};
+
 		oA.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
 		oA.setAttribute('download', `${filename}.${fileType[type]}`);
-
 		oA.style.display = 'none';
 		document.body.appendChild(oA);
 		oA.click();
@@ -312,13 +324,12 @@
 	}
 
 	Skeleton.prototype.setVueStyle = function (parent, sub, completedCallback) {
-		var _this = this;
 		var {
 			topOffset,
 			leftOffset,
 			offsetElementWidth,
 			offsetElementHeight
-		} = _this.elementLocation.relative(parent, sub);
+		} = this.elementLocation.relative(parent, sub);
 		var style = `
 			position: 'absolute',
 			top: '${topOffset}%',
@@ -333,40 +344,41 @@
 		if (parseFloat(borderRadius.replace(/\D/g, '')) > 0)
 			style += `borderRadius: '${borderRadius}'`;
 
-		if (!_this.vueHtmlString) _this.vueHtmlString = '';
-		_this.vueHtmlString += `<div class='${_this.className}' :style="{${style}}"></div>`;
+		if (!this.vueHtmlString) this.vueHtmlString = '';
+		this.vueHtmlString += `<div class='${this.className}' :style="{${style}}"></div>`;
 
-		if (typeof completedCallback === 'function' && !_this.setVueStyleTimeout) {
-			clearTimeout(_this.setVueStyleTimeout);
-			_this.setVueStyleTimeout = setTimeout(function () {
-				var width = parent.offsetWidth / SCREEN_WIDTH * 100;
-				var height = parent.offsetHeight / SCREEN_HEIGHT * 100;
-				var containerStyle = `
-					overflow: 'hidden',
-					position: 'relative',
-					width: '${width}vw',
-					height: '${height}vh'
-				`.replace(/[\r\n]/g, '').trim().replace(/\t/g, '');
-				var content = `<div :style="{${containerStyle}}">${_this.vueHtmlString.replace(/[\r\n]/g, '').trim().replace(/\t/g, '')}</div>`;
-				var vueComponentString = vueComponentTemplate
-					.replaceAll('<@className>', _this.className)
-					.replaceAll('<@keyframesName>', _this.keyframesName)
-					.replaceAll('<@content>', content);
+		if (
+			typeof completedCallback === 'function' &&
+			this.currentRootChildNum === this.currentRootChildCount
+		) {
+			var width = parent.offsetWidth / SCREEN_WIDTH * 100;
+			var height = parent.offsetHeight / SCREEN_HEIGHT * 100;
+			var containerStyle = `
+				overflow: 'hidden',
+				position: 'relative',
+				width: '${width}vw',
+				height: '${height}vh'
+			`.replace(/[\r\n]/g, '').trim().replace(/\t/g, '');
+			var content = `<div :style="{${containerStyle}}">${this.vueHtmlString.replace(/[\r\n]/g, '').trim().replace(/\t/g, '')}</div>`;
+			var vueComponentString = vueComponentTemplate
+				.replaceAll('<@className>', this.className)
+				.replaceAll('<@keyframesName>', this.keyframesName)
+				.replaceAll('<@content>', content);
 
-				completedCallback(vueComponentString);
-				delete _this.vueHtmlString;
-			});
+			completedCallback(vueComponentString);
+			delete this.vueHtmlString;
+			this.currentRootChildNum = 0;
+			this.currentRootChildCount = 0;
 		}
 	}
 
 	Skeleton.prototype.setImgStyle = function (parent, sub, completedCallback) {
-		var _this = this;
 		var {
 			topOffset,
 			leftOffset,
 			offsetElementWidth,
 			offsetElementHeight
-		} = _this.elementLocation.relative(parent, sub);
+		} = this.elementLocation.relative(parent, sub);
 		var style = `
 			position: absolute;
 			top: ${topOffset}%;
@@ -381,30 +393,32 @@
 		if (parseFloat(borderRadius.replace(/\D/g, '')) > 0)
 			style += `borderRadius: '${borderRadius}'`;
 
-		if (!_this.imgHtmlString) _this.imgHtmlString = '';
-		_this.imgHtmlString += `<div class='${_this.className}' style='${style}'></div>`;
+		if (!this.imgHtmlString) this.imgHtmlString = '';
+		this.imgHtmlString += `<div class='${this.className}' style='${style}'></div>`;
 
-		if (typeof completedCallback === 'function' && !_this.setImgStyleTimeout) {
-			clearTimeout(_this.setImgStyleTimeout);
-			_this.setImgStyleTimeout = setTimeout(function () {
-				var width = parent.offsetWidth / SCREEN_WIDTH * 100;
-				var height = parent.offsetHeight / SCREEN_HEIGHT * 100;
-				var containerStyle = `
-					overflow: hidden;
-					position: relative;
-					width: ${width}vw;
-					height: ${height}vh;
-				`;
-				var content = `<div style='${containerStyle}'>${_this.imgHtmlString}</div>`;
-				var svgString = `<svg xmlns='http://www.w3.org/2000/svg' width='${SCREEN_WIDTH}' height='${SCREEN_HEIGHT}'>
-					<foreignObject width="100%" height="100%">
-						<div xmlns="http://www.w3.org/1999/xhtml">${content}</div>
-					</foreignObject>
-				</svg>`;
+		if (
+			typeof completedCallback === 'function' &&
+			this.currentRootChildNum === this.currentRootChildCount
+		) {
+			var width = parent.offsetWidth / SCREEN_WIDTH * 100;
+			var height = parent.offsetHeight / SCREEN_HEIGHT * 100;
+			var containerStyle = `
+				overflow: hidden;
+				position: relative;
+				width: ${width}vw;
+				height: ${height}vh;
+			`;
+			var content = `<div style='${containerStyle}'>${this.imgHtmlString}</div>`;
+			var svgString = `<svg xmlns='http://www.w3.org/2000/svg' width='${SCREEN_WIDTH}' height='${SCREEN_HEIGHT}'>
+				<foreignObject width="100%" height="100%">
+					<div xmlns="http://www.w3.org/1999/xhtml">${content}</div>
+				</foreignObject>
+			</svg>`;
 
-				completedCallback(svgString);
-				delete _this.imgHtmlString;
-			});
+			completedCallback(svgString);
+			delete this.imgHtmlString;
+			this.currentRootChildNum = 0;
+			this.currentRootChildCount = 0;
 		}
 	}
 
