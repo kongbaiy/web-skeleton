@@ -1,0 +1,26 @@
+{
+  "name": "web-skeleton",
+  "version": "1.2.0",
+  "description": "web skeleton generate",
+  "main": "skeleton.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kongbaiy/web-skeleton/tree/dev-v1"
+  },
+  "keywords": [
+    "web",
+    "skeleton",
+    "skeleton",
+    "web",
+    "page"
+  ],
+  "author": "konbai",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kongbaiy/web-skeleton/issues"
+  },
+  "homepage": "https://github.com/kongbaiy/web-skeleton/tree/dev-v1#readme"
+}
